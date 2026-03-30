@@ -6,46 +6,62 @@
 <title>🌿 Mes Plantes</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 
-<!-- Firebase SDK -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+<!-- Firebase REST sync (no SDK needed) -->
+<script>
+(async function initFirebase() {
+  const DB_URL_KEY = 'fb_database_url';
+  const dbUrl = localStorage.getItem(DB_URL_KEY) || 'https://christinemesplantes-default-rtdb.europe-west1.firebasedatabase.app';
+  localStorage.setItem(DB_URL_KEY, dbUrl); // persist for future
 
-  // ⚙️ REMPLACEZ par votre config Firebase
-  const firebaseConfig = {
-    apiKey: window.FIREBASE_API_KEY || "",
-    authDomain: window.FIREBASE_AUTH_DOMAIN || "",
-    databaseURL: window.FIREBASE_DATABASE_URL || "",
-    projectId: window.FIREBASE_PROJECT_ID || "",
-    storageBucket: window.FIREBASE_STORAGE_BUCKET || "",
-    messagingSenderId: window.FIREBASE_MESSAGING_SENDER_ID || "",
-    appId: window.FIREBASE_APP_ID || ""
-  };
+  const base = dbUrl.replace(/\/$/, '') + '/watering';
 
-  let db = null;
-  if (firebaseConfig.databaseURL) {
+  // Load all watering data from Firebase
+  try {
+    const res = await fetch(base + '.json');
+    if (res.ok) {
+      const data = await res.json();
+      if (data) {
+        window.__fbData = data;
+        // Merge with localStorage
+        const local = JSON.parse(localStorage.getItem('mesplantes_watering_v2') || '{}');
+        window.__fbData = Object.assign({}, local, data);
+        console.log('✅ Firebase data loaded:', Object.keys(data).length, 'plants');
+        if (window.renderApp) window.renderApp();
+        window.firebaseReady = true;
+      }
+    }
+  } catch(e) { console.warn('Firebase load error:', e); }
+
+  // Save function
+  window.fbSaveWatering = async (plantId, date) => {
     try {
-      const app = initializeApp(firebaseConfig);
-      db = getDatabase(app);
-      console.log("✅ Firebase connecté");
-      // Listen for changes
-      onValue(ref(db, "watering"), (snapshot) => {
-        const data = snapshot.val();
+      await fetch(`${base}/${plantId}.json`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(date)
+      });
+      // Also update local cache
+      if (!window.__fbData) window.__fbData = {};
+      window.__fbData[plantId] = date;
+      return true;
+    } catch(e) { console.warn('Firebase save error:', e); return false; }
+  };
+  window.fbGetWatering = () => window.__fbData || {};
+
+  // Poll for remote changes every 30s (for real-time feel)
+  setInterval(async () => {
+    try {
+      const res = await fetch(base + '.json');
+      if (res.ok) {
+        const data = await res.json();
         if (data) {
           window.__fbData = data;
           if (window.renderApp) window.renderApp();
         }
-      });
-    } catch(e) { console.warn("Firebase error:", e); }
-  }
-
-  window.fbSaveWatering = async (plantId, date) => {
-    if (!db) return false;
-    await set(ref(db, `watering/${plantId}`), date);
-    return true;
-  };
-  window.fbGetWatering = () => window.__fbData || {};
-  window.firebaseReady = !!db;
+      }
+    } catch(e) {}
+  }, 30000);
+})();
 </script>
 
 <style>
@@ -521,7 +537,7 @@ body {
   <div class="header-stats">
     <span class="stat-badge">🌿 9 extérieur</span>
     <span class="stat-badge">🏠 14 intérieur</span>
-    <button class="sync-badge" onclick="document.getElementById('firebase-modal').classList.add('show')" id="sync-status">⚡ Configurer sync</button>
+    <button class="sync-badge" id="sync-status">🔄 Sync Firebase</button>
   </div>
 </header>
 
