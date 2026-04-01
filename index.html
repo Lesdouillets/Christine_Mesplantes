@@ -1086,13 +1086,13 @@ function buildMobileRow(plant) {
   const repotCls = plant.rempotage.includes('🔴') ? ' alert' : '';
 
   return `<div class="plant-row-wrap" id="w-${plant.id}">
-  <div class="plant-row ${st.cls}">
+  <div class="plant-row ${st.cls}" onclick="toggleDetail('${plant.id}')" style="cursor:pointer">
     <div class="plant-photo ${st.cls}">${photo}${dotHtml}</div>
     <div class="plant-info">
       <div class="plant-name">${plant.emoji} ${plant.name}${plant.detail ? ` <span class="plant-detail">(${plant.detail})</span>` : ''}</div>
       <div class="plant-sub"><span class="freq-badge">⏱ ${formatDays(plant.arrosage_days)}</span> · 💧 ${st.label}</div>
     </div>
-    <button class="action-btn ${st.cls}" onclick="waterToday('${plant.id}')">
+    <button class="action-btn ${st.cls}" onclick="event.stopPropagation(); waterToday('${plant.id}')">
       ${st.cls === 'late' ? 'Arroser' : st.cls === 'soon' ? 'Bientôt' : 'Arrosé ✓'}
     </button>
   </div>
