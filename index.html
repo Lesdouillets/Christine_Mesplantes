@@ -374,6 +374,121 @@ body {
   align-self: flex-start;
 }
 
+/* ── WATER-ALL MODAL ── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(26,18,9,.45);
+  z-index: 200;
+  align-items: flex-end;
+}
+.modal-overlay.open { display: flex; }
+@media (min-width: 768px) {
+  .modal-overlay { align-items: center; justify-content: center; }
+}
+.water-modal {
+  background: var(--white);
+  border-radius: 20px 20px 0 0;
+  padding: 20px 20px 32px;
+  width: 100%;
+  max-width: 480px;
+  font-family: 'Inter', sans-serif;
+}
+@media (min-width: 768px) {
+  .water-modal { border-radius: 16px; padding: 24px; }
+}
+.water-modal h3 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.1rem;
+  color: var(--brown);
+  margin-bottom: 6px;
+}
+.water-modal .modal-sub {
+  font-size: .75rem;
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+.water-modal .modal-drag {
+  width: 36px; height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  margin: 0 auto 16px;
+}
+@media (min-width: 768px) { .water-modal .modal-drag { display: none; } }
+.category-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-radius: 12px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  border: 2px solid var(--border);
+  transition: all .15s;
+  user-select: none;
+}
+.category-option.selected { border-color: var(--terra); background: #fdf3e8; }
+.category-option.selected.cat-late { border-color: var(--alert); background: var(--alert-bg); }
+.category-option.selected.cat-soon { border-color: var(--warn); background: var(--warn-bg); }
+.category-option.selected.cat-ok { border-color: var(--ok); background: var(--ok-bg); }
+.cat-left { display: flex; align-items: center; gap: 10px; }
+.cat-dot { width: 10px; height: 10px; border-radius: 50%; }
+.cat-dot.late { background: var(--alert); }
+.cat-dot.soon { background: var(--warn); }
+.cat-dot.ok { background: var(--ok); }
+.cat-label { font-size: .85rem; font-weight: 600; color: var(--brown); }
+.cat-count { font-size: .72rem; color: var(--muted); margin-top: 1px; }
+.cat-check {
+  width: 22px; height: 22px; border-radius: 6px;
+  border: 2px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: .8rem; color: transparent;
+  background: var(--white);
+  flex-shrink: 0;
+  transition: all .15s;
+}
+.category-option.selected .cat-check {
+  background: var(--terra);
+  border-color: var(--terra);
+  color: #fff;
+}
+.category-option.selected.cat-late .cat-check { background: var(--alert); border-color: var(--alert); }
+.category-option.selected.cat-soon .cat-check { background: var(--warn); border-color: var(--warn); }
+.category-option.selected.cat-ok .cat-check { background: var(--ok); border-color: var(--ok); }
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+.modal-cancel {
+  flex: 1;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--white);
+  font-size: .82rem;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+}
+.modal-confirm {
+  flex: 2;
+  padding: 12px;
+  border-radius: 10px;
+  border: none;
+  background: var(--terra);
+  color: #fff;
+  font-size: .82rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: background .15s;
+}
+.modal-confirm:hover { background: var(--terra-dark); }
+.modal-confirm:disabled { background: var(--border); color: var(--muted); cursor: default; }
+
 /* ── BOTTOM NAV ── */
 .bottom-nav {
   position: fixed;
@@ -736,15 +851,58 @@ body {
     <div class="nav-icon">🌿</div>
     Plantes
   </div>
-  <div class="bottom-nav-item" onclick="scrollTop()">
+  <div class="bottom-nav-item" onclick="scrollToTop()">
     <div class="nav-icon">⬆️</div>
     Haut
   </div>
-  <div class="bottom-nav-item">
+  <div class="bottom-nav-item" onclick="showToast('⚙️ Réglages — bientôt disponible')">
     <div class="nav-icon">⚙️</div>
     Réglages
   </div>
 </nav>
+
+<!-- ── WATER-ALL MODAL ── -->
+<div class="modal-overlay" id="water-modal-overlay" onclick="closeWaterModal(event)">
+  <div class="water-modal">
+    <div class="modal-drag"></div>
+    <h3>💧 Tout arroser</h3>
+    <p class="modal-sub">Sélectionne les catégories à arroser aujourd'hui</p>
+    <div class="category-option cat-late selected" id="cat-late" onclick="toggleCat('late')">
+      <div class="cat-left">
+        <div class="cat-dot late"></div>
+        <div>
+          <div class="cat-label">En retard</div>
+          <div class="cat-count" id="cat-late-count">0 plante</div>
+        </div>
+      </div>
+      <div class="cat-check">✓</div>
+    </div>
+    <div class="category-option cat-soon" id="cat-soon" onclick="toggleCat('soon')">
+      <div class="cat-left">
+        <div class="cat-dot soon"></div>
+        <div>
+          <div class="cat-label">Bientôt</div>
+          <div class="cat-count" id="cat-soon-count">0 plante</div>
+        </div>
+      </div>
+      <div class="cat-check">✓</div>
+    </div>
+    <div class="category-option cat-ok" id="cat-ok" onclick="toggleCat('ok')">
+      <div class="cat-left">
+        <div class="cat-dot ok"></div>
+        <div>
+          <div class="cat-label">OK</div>
+          <div class="cat-count" id="cat-ok-count">0 plante</div>
+        </div>
+      </div>
+      <div class="cat-check">✓</div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeWaterModal()">Annuler</button>
+      <button class="modal-confirm" id="modal-confirm-btn" onclick="confirmWaterAll()">Arroser</button>
+    </div>
+  </div>
+</div>
 
 <!-- ── TOAST ── -->
 <div class="toast" id="toast"></div>
@@ -801,14 +959,72 @@ function waterToday(plantId) {
   showToast('💧 Arrosé !');
 }
 
+// ── WATER-ALL MODAL ──
 function waterAll() {
   const allPlants = [...EP, ...IP];
-  const toWater = allPlants.filter(p => getStatus(p).cls === 'late');
-  if (toWater.length === 0) { showToast('✅ Tout est arrosé !'); return; }
+  const late = allPlants.filter(p => getStatus(p).cls === 'late').length;
+  const soon = allPlants.filter(p => getStatus(p).cls === 'soon').length;
+  const ok   = allPlants.filter(p => ['ok','none'].includes(getStatus(p).cls)).length;
+
+  // Update counts
+  const pl = n => `${n} plante${n > 1 ? 's' : ''}`;
+  document.getElementById('cat-late-count').textContent = pl(late);
+  document.getElementById('cat-soon-count').textContent = pl(soon);
+  document.getElementById('cat-ok-count').textContent   = pl(ok);
+
+  // Pre-select only late if any, else soon
+  const lateCat  = document.getElementById('cat-late');
+  const soonCat  = document.getElementById('cat-soon');
+  const okCat    = document.getElementById('cat-ok');
+  lateCat.classList.toggle('selected', late > 0);
+  soonCat.classList.remove('selected');
+  okCat.classList.remove('selected');
+
+  updateModalBtn();
+  document.getElementById('water-modal-overlay').classList.add('open');
+}
+
+function toggleCat(cat) {
+  document.getElementById('cat-' + cat).classList.toggle('selected');
+  updateModalBtn();
+}
+
+function updateModalBtn() {
+  const any = ['late','soon','ok'].some(c =>
+    document.getElementById('cat-' + c).classList.contains('selected')
+  );
+  const btn = document.getElementById('modal-confirm-btn');
+  btn.disabled = !any;
+  const allPlants = [...EP, ...IP];
+  let total = 0;
+  if (document.getElementById('cat-late').classList.contains('selected'))
+    total += allPlants.filter(p => getStatus(p).cls === 'late').length;
+  if (document.getElementById('cat-soon').classList.contains('selected'))
+    total += allPlants.filter(p => getStatus(p).cls === 'soon').length;
+  if (document.getElementById('cat-ok').classList.contains('selected'))
+    total += allPlants.filter(p => ['ok','none'].includes(getStatus(p).cls)).length;
+  btn.textContent = total > 0 ? `💧 Arroser ${total} plante${total > 1 ? 's' : ''}` : 'Arroser';
+}
+
+function confirmWaterAll() {
+  const allPlants = [...EP, ...IP];
+  const selected = [];
+  if (document.getElementById('cat-late').classList.contains('selected'))
+    selected.push(...allPlants.filter(p => getStatus(p).cls === 'late'));
+  if (document.getElementById('cat-soon').classList.contains('selected'))
+    selected.push(...allPlants.filter(p => getStatus(p).cls === 'soon'));
+  if (document.getElementById('cat-ok').classList.contains('selected'))
+    selected.push(...allPlants.filter(p => ['ok','none'].includes(getStatus(p).cls)));
   const d = today();
-  toWater.forEach(p => saveData(p.id, d));
+  selected.forEach(p => saveData(p.id, d));
+  closeWaterModal();
   renderAll();
-  showToast(`💧 ${toWater.length} plante${toWater.length > 1 ? 's' : ''} arrosée${toWater.length > 1 ? 's' : ''} !`);
+  showToast(`💧 ${selected.length} plante${selected.length > 1 ? 's' : ''} arrosée${selected.length > 1 ? 's' : ''} !`);
+}
+
+function closeWaterModal(e) {
+  if (e && e.target !== document.getElementById('water-modal-overlay')) return;
+  document.getElementById('water-modal-overlay').classList.remove('open');
 }
 
 function waterWithDate(plantId) {
@@ -1045,7 +1261,13 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 2500);
 }
 
-function scrollTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+function scrollToTop() {
+  if (window.innerWidth >= 768) {
+    document.querySelector('.content-area')?.scrollTo({ top: 0, behavior: 'smooth' });
+  } else {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+}
 
 window.renderApp = renderAll;
 renderAll();
